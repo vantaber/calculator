@@ -23,6 +23,22 @@ import random
 import matplotlib.patheffects as path_effects
 
 
+# ===== LOGIN SCREEN CONFIG =====
+LOGIN_PANEL_WIDTH = 980
+LOGIN_PANEL_HEIGHT = 640
+LOGIN_PANEL_PADDING = 40
+LOGIN_PANEL_BACKGROUND = "#050505"
+LOGIN_PANEL_BORDER_WIDTH = 4
+LOGIN_PANEL_BORDER_COLOR = "#00ff88"
+LOGIN_PANEL_RADIUS = 8
+
+LOGIN_WIDGET_WIDTH = 750
+LOGIN_WIDGET_HEIGHT = 500
+LOGIN_WIDGET_BACKGROUND = "transparent"
+LOGIN_WIDGET_BORDER_WIDTH = 0
+LOGIN_WIDGET_BORDER_COLOR = "transparent"
+
+
 class MplCanvas(FigureCanvas):
     def __init__(self):
         self.fig = Figure(figsize=(5, 5))
@@ -81,33 +97,33 @@ class LoginWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setFixedSize(750, 500)
+        self.setFixedSize(LOGIN_WIDGET_WIDTH, LOGIN_WIDGET_HEIGHT)
 
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #000000;
-                border: 3px solid #00ff88;
-            }
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {LOGIN_WIDGET_BACKGROUND};
+                border: {LOGIN_WIDGET_BORDER_WIDTH}px solid {LOGIN_WIDGET_BORDER_COLOR};
+            }}
 
-            QLabel {
+            QLabel {{
                 color: #00ff88;
-            }
+            }}
 
-            QPushButton {
+            QPushButton {{
                 background-color: #001100;
                 color: #00ff88;
                 border: 3px solid #00ff88;
                 padding: 12px;
-            }
+            }}
 
-            QPushButton:hover {
+            QPushButton:hover {{
                 background-color: #00ff88;
                 color: black;
-            }
+            }}
 
-            QPushButton:pressed {
+            QPushButton:pressed {{
                 background-color: #003300;
-            }
+            }}
         """)
 
         layout = QVBoxLayout()
@@ -182,6 +198,8 @@ class DebtApp(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.is_drilled = False
+
         self.setWindowTitle("ЖИГАЛО-КАЛЬКУЛЯТОР")
         self.setWindowState(Qt.WindowState.WindowMaximized)
 
@@ -197,18 +215,44 @@ class DebtApp(QMainWindow):
         self.show_login()
 
     def show_login(self):
-        self.login_widget = LoginWidget(self.centralWidget())
+        self.login_panel = QWidget(self.centralWidget())
+        self.login_panel.setFixedSize(LOGIN_PANEL_WIDTH, LOGIN_PANEL_HEIGHT)
+        self.login_panel.setStyleSheet(f"""
+            QWidget {{
+                background-color: {LOGIN_PANEL_BACKGROUND};
+                border: {LOGIN_PANEL_BORDER_WIDTH}px solid {LOGIN_PANEL_BORDER_COLOR};
+                border-radius: {LOGIN_PANEL_RADIUS}px;
+            }}
+        """)
+
+        panel_layout = QVBoxLayout(self.login_panel)
+        panel_layout.setContentsMargins(
+            LOGIN_PANEL_PADDING,
+            LOGIN_PANEL_PADDING,
+            LOGIN_PANEL_PADDING,
+            LOGIN_PANEL_PADDING
+        )
+
+        self.login_widget = LoginWidget(self.login_panel)
+        panel_layout.addWidget(self.login_widget)
         self.center_login()
         self.login_widget.login_button.clicked.connect(self.start_system)
 
     def center_login(self):
-        self.login_widget.move(
-            self.width() // 2 - self.login_widget.width() // 2,
-            self.height() // 2 - self.login_widget.height() // 2
-        )
+        if hasattr(self, "login_panel") and self.login_panel is not None:
+            self.login_panel.move(
+                self.width() // 2 - self.login_panel.width() // 2,
+                self.height() // 2 - self.login_panel.height() // 2
+            )
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.center_login()
 
     def start_system(self):
-        self.login_widget.deleteLater()
+        self.login_panel.deleteLater()
+        self.login_panel = None
+        self.login_widget = None
         self.show_loading_animation()
 
     def show_loading_animation(self):
@@ -254,6 +298,10 @@ class DebtApp(QMainWindow):
             QTimer.singleShot(1500, self.init_main_ui)
 
     def init_main_ui(self):
+        if hasattr(self, "loading_screen") and self.loading_screen is not None:
+            self.layout.removeWidget(self.loading_screen)
+            self.loading_screen.deleteLater()
+            self.loading_screen = None
 
         self.animation_progress = 0
 
@@ -403,6 +451,11 @@ class DebtApp(QMainWindow):
         self.show_loading()
         self.matrix_bg.show()
 
+        self.canvas.mpl_connect("button_press_event", self.handle_click)
+
+        chart_layout = QVBoxLayout()
+        chart_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+
     def update_datetime(self):
         now = datetime.now()
 
@@ -468,13 +521,34 @@ class DebtApp(QMainWindow):
         df = pd.read_excel("долги.xlsx")
         df = df.sort_values(by="Amount", ascending=False)
 
-        self.animation_progress = 0
+        total = df["Amount"].sum()
 
-        self.names = df["Name"].reset_index(drop=True)
-        self.amounts = df["Amount"].reset_index(drop=True)
+        df["Percent"] = df["Amount"] / total * 100
 
-        total = self.amounts.sum()
-        count = len(self.amounts)
+        # --- делим на основные и маленькие ---
+        main_df = df[df["Percent"] >= 2].copy()
+        small_df = df[df["Percent"] < 2].copy()
+
+        # --- если есть мелкие ---
+        if not small_df.empty:
+            others_sum = small_df["Amount"].sum()
+            others_percent = others_sum / total * 100
+
+            others_row = pd.DataFrame([{
+                "Name": "Остальные",
+                "Amount": others_sum,
+                "Percent": others_percent
+            }])
+
+            # добавляем "Остальные" В КОНЕЦ
+            main_df = pd.concat([main_df, others_row], ignore_index=True)
+
+        self.main_df = main_df.reset_index(drop=True)
+        self.small_df = small_df.reset_index(drop=True)
+        self.total_sum = total
+
+        # KPI
+        count = len(df)
         avg = int(total / count) if count > 0 else 0
 
         self.kpi_total.setText(f"Общий долг: {total:,} ₽")
@@ -586,20 +660,13 @@ class DebtApp(QMainWindow):
         self.pulse_state = not self.pulse_state
 
     def animate_chart(self):
-        if not hasattr(self, "amounts") or len(self.amounts) == 0:
+        if self.main_df.empty:
             return
-        self.animation_progress += 0.05
-
-        if self.animation_progress > 1:
-            self.animation_progress = 1
 
         self.canvas.ax.clear()
 
-        self.canvas.ax.set_facecolor("none")
-        self.canvas.ax.set_frame_on(False)
-
-        self.canvas.ax.set_position([0, 0, 1, 1])
-        self.canvas.fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        names = self.main_df["Name"]
+        amounts = self.main_df["Amount"]
 
         font_path = "Hack-Regular.ttf"
         hack_font = font_manager.FontProperties(fname=font_path)
@@ -609,52 +676,33 @@ class DebtApp(QMainWindow):
             "#00cc66",
             "#009944",
             "#006633",
-            "#003322"
+            "#003322",
+            "#001a11"
         ]
-
-        animated_values = self.amounts * self.animation_progress
 
         def autopct_format(pct):
             return f"{pct:.1f}%"
 
         wedges, texts, autotexts = self.canvas.ax.pie(
-            animated_values,
-            labels=self.names,
+            amounts,
+            labels=names,
             autopct=autopct_format,
             startangle=90,
             colors=colors,
             wedgeprops=dict(width=0.75, edgecolor="#0a0a0a")
         )
 
-        self.canvas.ax.set_xticks([])
-        self.canvas.ax.set_yticks([])
-        self.canvas.ax.axis("off")
+        # сохраняем wedges для клика
+        self.wedges = wedges
 
-        for wedge in wedges:
-            wedge.set_path_effects([
-                path_effects.Stroke(linewidth=6, foreground="#003300"),
-                path_effects.Normal()
-            ])
+        self.canvas.ax.axis("off")
 
         for text in texts + autotexts:
             text.set_fontproperties(hack_font)
             text.set_color("#00ff88")
-            text.set_path_effects([
-                path_effects.Stroke(linewidth=2, foreground="#003300"),
-                path_effects.Normal()
-            ])
             text.set_fontsize(9)
 
-        self.canvas.ax.set_title("", color="#00ff88")
-        self.canvas.ax.title.set_fontproperties(hack_font)
-
-        self.canvas.ax.set_facecolor("#1e1e1e")
-        self.canvas.fig.patch.set_facecolor("#1e1e1e")
-
         self.canvas.draw()
-
-        if self.animation_progress < 1:
-            QTimer.singleShot(30, self.animate_chart)
 
     def show_loading(self):
         self.loading_label = QLabel("INITIALIZING SYSTEM...")
@@ -675,6 +723,78 @@ class DebtApp(QMainWindow):
 
         if hasattr(self, "matrix_bg"):
             self.matrix_bg.resize(self.centralWidget().size())
+
+    def handle_click(self, event):
+        if event.inaxes != self.canvas.ax:
+            return
+
+        for i, wedge in enumerate(self.wedges):
+            if wedge.contains_point([event.x, event.y]):
+                name = self.main_df.iloc[i]["Name"]
+
+                if name == "Остальные" and not self.small_df.empty:
+                    self.drill_down()
+                break
+
+    def drill_down(self):
+        self.is_drilled = True
+        self.canvas.ax.clear()
+
+        names = self.small_df["Name"]
+        amounts = self.small_df["Amount"]
+
+        font_path = "Hack-Regular.ttf"
+        hack_font = font_manager.FontProperties(fname=font_path)
+
+        def autopct_format(pct):
+            absolute = pct / 100 * sum(amounts)
+            percent_total = absolute / self.total_sum * 100
+            return f"{percent_total:.1f}%"
+
+        wedges, texts, autotexts = self.canvas.ax.pie(
+            amounts,
+            labels=names,
+            autopct=autopct_format,
+            startangle=90,
+            wedgeprops=dict(width=0.75, edgecolor="#0a0a0a")
+        )
+
+        for text in texts + autotexts:
+            text.set_fontproperties(hack_font)
+            text.set_color("#00ff88")
+            text.set_fontsize(9)
+
+        self.canvas.ax.axis("off")
+        self.canvas.draw()
+
+        self.show_back_button()
+
+    def show_back_button(self):
+
+        # если уже есть — не создаём вторую
+        if hasattr(self, "back_button"):
+            return
+
+        self.back_button = QPushButton("←")
+        self.back_button.setFixedSize(40, 30)
+        self.back_button.setStyleSheet("""
+            font-size: 16px;
+            padding: 2px;
+        """)
+
+        # добавляем в контейнер диаграммы
+        self.chart_container.layout().addWidget(self.back_button)
+
+        self.back_button.clicked.connect(self.go_back)
+
+    def go_back(self):
+        self.is_drilled = False
+
+        if hasattr(self, "back_button"):
+            self.back_button.deleteLater()
+            del self.back_button
+
+        self.animate_chart()
 
 
 if __name__ == "__main__":
