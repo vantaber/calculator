@@ -256,6 +256,10 @@ class DebtApp(QMainWindow):
             QTimer.singleShot(1500, self.init_main_ui)
 
     def init_main_ui(self):
+        if hasattr(self, "loading_screen") and self.loading_screen is not None:
+            self.layout.removeWidget(self.loading_screen)
+            self.loading_screen.deleteLater()
+            self.loading_screen = None
 
         self.animation_progress = 0
 
