@@ -23,6 +23,22 @@ import random
 import matplotlib.patheffects as path_effects
 
 
+# ===== LOGIN SCREEN CONFIG =====
+LOGIN_PANEL_WIDTH = 980
+LOGIN_PANEL_HEIGHT = 640
+LOGIN_PANEL_PADDING = 40
+LOGIN_PANEL_BACKGROUND = "#050505"
+LOGIN_PANEL_BORDER_WIDTH = 4
+LOGIN_PANEL_BORDER_COLOR = "#00ff88"
+LOGIN_PANEL_RADIUS = 8
+
+LOGIN_WIDGET_WIDTH = 750
+LOGIN_WIDGET_HEIGHT = 500
+LOGIN_WIDGET_BACKGROUND = "transparent"
+LOGIN_WIDGET_BORDER_WIDTH = 0
+LOGIN_WIDGET_BORDER_COLOR = "transparent"
+
+
 class MplCanvas(FigureCanvas):
     def __init__(self):
         self.fig = Figure(figsize=(5, 5))
@@ -81,13 +97,13 @@ class LoginWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setFixedSize(750, 500)
+        self.setFixedSize(LOGIN_WIDGET_WIDTH, LOGIN_WIDGET_HEIGHT)
 
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #000000;
-                border: 3px solid #00ff88;
-            }
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {LOGIN_WIDGET_BACKGROUND};
+                border: {LOGIN_WIDGET_BORDER_WIDTH}px solid {LOGIN_WIDGET_BORDER_COLOR};
+            }}
 
             QLabel {
                 color: #00ff88;
@@ -199,18 +215,44 @@ class DebtApp(QMainWindow):
         self.show_login()
 
     def show_login(self):
-        self.login_widget = LoginWidget(self.centralWidget())
+        self.login_panel = QWidget(self.centralWidget())
+        self.login_panel.setFixedSize(LOGIN_PANEL_WIDTH, LOGIN_PANEL_HEIGHT)
+        self.login_panel.setStyleSheet(f"""
+            QWidget {{
+                background-color: {LOGIN_PANEL_BACKGROUND};
+                border: {LOGIN_PANEL_BORDER_WIDTH}px solid {LOGIN_PANEL_BORDER_COLOR};
+                border-radius: {LOGIN_PANEL_RADIUS}px;
+            }}
+        """)
+
+        panel_layout = QVBoxLayout(self.login_panel)
+        panel_layout.setContentsMargins(
+            LOGIN_PANEL_PADDING,
+            LOGIN_PANEL_PADDING,
+            LOGIN_PANEL_PADDING,
+            LOGIN_PANEL_PADDING
+        )
+
+        self.login_widget = LoginWidget(self.login_panel)
+        panel_layout.addWidget(self.login_widget)
         self.center_login()
         self.login_widget.login_button.clicked.connect(self.start_system)
 
     def center_login(self):
-        self.login_widget.move(
-            self.width() // 2 - self.login_widget.width() // 2,
-            self.height() // 2 - self.login_widget.height() // 2
-        )
+        if hasattr(self, "login_panel") and self.login_panel is not None:
+            self.login_panel.move(
+                self.width() // 2 - self.login_panel.width() // 2,
+                self.height() // 2 - self.login_panel.height() // 2
+            )
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.center_login()
 
     def start_system(self):
-        self.login_widget.deleteLater()
+        self.login_panel.deleteLater()
+        self.login_panel = None
+        self.login_widget = None
         self.show_loading_animation()
 
     def show_loading_animation(self):
