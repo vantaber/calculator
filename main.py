@@ -80,74 +80,142 @@ class LoginWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setFixedSize(750, 500)
-
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #000000;
-                border: 3px solid #00ff88;
+        self.ui_config = {
+            "login_window_size": {"width": 750, "height": 500},
+            "window_background": "#000000",
+            "accent_color": "#00ff88",
+            "field_background": "#001100",
+            "content_padding": 12,
+            "content_spacing": 26,
+            "layout_divisions": 6,
+            "use_outer_frame": False,
+            "outer_frame_border": 3,
+            "title_font_size": 50,
+            "label_font_size": 40,
+            "value_font_size": 40,
+            "button_font_size": 50,
+            "title_box_height": 88,
+            "label_box_height": 70,
+            "value_box_height": 95,
+            "button_box_height": 88,
+            "component_regions": {
+                "row_1": "Заголовок SYSTEM AUTHORIZATION",
+                "row_2": "Лейбл ЛОГИН",
+                "row_3": "Поле значения логина",
+                "row_4": "Лейбл ПАРОЛЬ",
+                "row_5": "Поле значения пароля",
+                "row_6": "Кнопка ВОЙТИ"
             }
+        }
 
-            QLabel {
-                color: #00ff88;
-            }
+        self.setFixedSize(
+            self.ui_config["login_window_size"]["width"],
+            self.ui_config["login_window_size"]["height"]
+        )
 
-            QPushButton {
-                background-color: #001100;
-                color: #00ff88;
-                border: 3px solid #00ff88;
+        self.setStyleSheet(f"""
+            QWidget {{
+                background-color: {self.ui_config['window_background']};
+            }}
+
+            QLabel {{
+                color: {self.ui_config['accent_color']};
+            }}
+
+            QPushButton {{
+                background-color: {self.ui_config['field_background']};
+                color: {self.ui_config['accent_color']};
+                border: 3px solid {self.ui_config['accent_color']};
                 padding: 12px;
-            }
+            }}
 
-            QPushButton:hover {
-                background-color: #00ff88;
+            QPushButton:hover {{
+                background-color: {self.ui_config['accent_color']};
                 color: black;
-            }
-            
-            QPushButton:pressed {
+            }}
+
+            QPushButton:pressed {{
                 background-color: #003300;
-            }
+            }}
         """)
 
+        root_layout = QVBoxLayout()
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        self.setLayout(root_layout)
+
+        self.main_container = QWidget()
+        if self.ui_config["use_outer_frame"]:
+            self.main_container.setStyleSheet(
+                f"border: {self.ui_config['outer_frame_border']}px solid {self.ui_config['accent_color']};"
+            )
+        root_layout.addWidget(self.main_container)
+
         layout = QVBoxLayout()
-        layout.setSpacing(30)
-        self.setLayout(layout)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(self.ui_config["content_spacing"])
+        self.main_container.setLayout(layout)
 
         self.title = QLabel("SYSTEM AUTHORIZATION")
-        self.title.setStyleSheet("font-size: 40px; color: #00ff88;")
+        self.title.setFixedHeight(self.ui_config["title_box_height"])
+        self.title.setStyleSheet(
+            f"font-size: {self.ui_config['title_font_size']}px;"
+            f"color: {self.ui_config['accent_color']};"
+            f"border: 3px solid {self.ui_config['accent_color']};"
+            f"padding: {self.ui_config['content_padding'] // 2}px;"
+        )
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.title)
 
         self.user_label = QLabel("ЛОГИН:")
-        self.user_label.setStyleSheet("font-size: 26px;")
+        self.user_label.setFixedHeight(self.ui_config["label_box_height"])
+        self.user_label.setStyleSheet(
+            f"font-size: {self.ui_config['label_font_size']}px;"
+            f"border: 3px solid {self.ui_config['accent_color']};"
+            f"padding-left: {self.ui_config['content_padding']}px;"
+        )
         layout.addWidget(self.user_label)
 
         self.user_value = QLabel("")
-        self.user_value.setStyleSheet("""
-            background:#001100;
-            padding:12px;
-            font-size: 28px;
-        """)
+        self.user_value.setFixedHeight(self.ui_config["value_box_height"])
+        self.user_value.setStyleSheet(
+            f"background: {self.ui_config['field_background']};"
+            f"padding: {self.ui_config['content_padding']}px;"
+            f"border: 3px solid {self.ui_config['accent_color']};"
+            f"font-size: {self.ui_config['value_font_size']}px;"
+        )
+        self.user_value.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.user_value)
 
         self.pass_label = QLabel("ПАРОЛЬ:")
-        self.pass_label.setStyleSheet("font-size: 26px;")
+        self.pass_label.setFixedHeight(self.ui_config["label_box_height"])
+        self.pass_label.setStyleSheet(
+            f"font-size: {self.ui_config['label_font_size']}px;"
+            f"border: 3px solid {self.ui_config['accent_color']};"
+            f"padding-left: {self.ui_config['content_padding']}px;"
+        )
         layout.addWidget(self.pass_label)
 
         self.pass_value = QLabel("")
-        self.pass_value.setStyleSheet("""
-            background:#001100;
-            padding:12px;
-            font-size: 28px;
-        """)
+        self.pass_value.setFixedHeight(self.ui_config["value_box_height"])
+        self.pass_value.setStyleSheet(
+            f"background: {self.ui_config['field_background']};"
+            f"padding: {self.ui_config['content_padding']}px;"
+            f"border: 3px solid {self.ui_config['accent_color']};"
+            f"font-size: {self.ui_config['value_font_size']}px;"
+        )
+        self.pass_value.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.pass_value)
 
         self.login_button = QPushButton("В О Й Т И")
-        self.login_button.setStyleSheet("""
-            font-size: 28px;
-            padding: 14px;
-        """)
+        self.login_button.setFixedHeight(self.ui_config["button_box_height"])
+        self.login_button.setStyleSheet(
+            f"font-size: {self.ui_config['button_font_size']}px;"
+            f"padding: {self.ui_config['content_padding']}px;"
+            "letter-spacing: 8px;"
+        )
         layout.addWidget(self.login_button)
+
+        self.print_ui_config()
 
         self.username_text = "Хуесос_Ебаный45"
         self.password_text = "*" * 15
@@ -158,6 +226,10 @@ class LoginWidget(QWidget):
         self.typing_timer = QTimer()
         self.typing_timer.timeout.connect(self.type_text)
         self.typing_timer.start(200)
+
+    def print_ui_config(self):
+        print("\n=== LOGIN UI SETTINGS ===")
+        print(json.dumps(self.ui_config, ensure_ascii=False, indent=2))
 
     def type_text(self):
         if self.user_index < len(self.username_text):
