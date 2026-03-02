@@ -80,12 +80,37 @@ class LoginWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.setFixedSize(750, 500)
+        self.ui_config = {
+            "login_window_size": {"width": 750, "height": 500},
+            "outer_padding": 16,
+            "main_frame_border": 3,
+            "frame_spacing": 18,
+            "title_font_size": 46,
+            "label_font_size": 24,
+            "value_font_size": 34,
+            "button_font_size": 40,
+            "label_box_height": 54,
+            "value_box_height": 78,
+            "button_box_height": 84,
+            "layout_divisions": 6,
+            "component_regions": {
+                "row_1": "Заголовок SYSTEM AUTHORIZATION",
+                "row_2": "Лейбл ЛОГИН",
+                "row_3": "Поле значения логина",
+                "row_4": "Лейбл ПАРОЛЬ",
+                "row_5": "Поле значения пароля",
+                "row_6": "Кнопка ВОЙТИ"
+            }
+        }
+
+        self.setFixedSize(
+            self.ui_config["login_window_size"]["width"],
+            self.ui_config["login_window_size"]["height"]
+        )
 
         self.setStyleSheet("""
             QWidget {
                 background-color: #000000;
-                border: 3px solid #00ff88;
             }
 
             QLabel {
@@ -109,45 +134,85 @@ class LoginWidget(QWidget):
             }
         """)
 
+        root_layout = QVBoxLayout()
+        root_layout.setContentsMargins(
+            self.ui_config["outer_padding"],
+            self.ui_config["outer_padding"],
+            self.ui_config["outer_padding"],
+            self.ui_config["outer_padding"]
+        )
+        self.setLayout(root_layout)
+
+        self.main_frame = QWidget()
+        self.main_frame.setStyleSheet(
+            f"border: {self.ui_config['main_frame_border']}px solid #00ff88;"
+            "background-color: transparent;"
+        )
+        root_layout.addWidget(self.main_frame)
+
         layout = QVBoxLayout()
-        layout.setSpacing(30)
-        self.setLayout(layout)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(self.ui_config["frame_spacing"])
+        self.main_frame.setLayout(layout)
 
         self.title = QLabel("SYSTEM AUTHORIZATION")
-        self.title.setStyleSheet("font-size: 40px; color: #00ff88;")
+        self.title.setStyleSheet(
+            f"font-size: {self.ui_config['title_font_size']}px;"
+            "color: #00ff88;"
+            "border: 3px solid #00ff88;"
+            "padding: 6px;"
+        )
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.title)
 
         self.user_label = QLabel("ЛОГИН:")
-        self.user_label.setStyleSheet("font-size: 26px;")
+        self.user_label.setFixedHeight(self.ui_config["label_box_height"])
+        self.user_label.setStyleSheet(
+            f"font-size: {self.ui_config['label_font_size']}px;"
+            "border: 3px solid #00ff88;"
+            "padding-left: 10px;"
+        )
         layout.addWidget(self.user_label)
 
         self.user_value = QLabel("")
+        self.user_value.setFixedHeight(self.ui_config["value_box_height"])
         self.user_value.setStyleSheet("""
             background:#001100;
             padding:12px;
-            font-size: 28px;
-        """)
+            border: 3px solid #00ff88;
+        """ + f"font-size: {self.ui_config['value_font_size']}px;")
+        self.user_value.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.user_value)
 
         self.pass_label = QLabel("ПАРОЛЬ:")
-        self.pass_label.setStyleSheet("font-size: 26px;")
+        self.pass_label.setFixedHeight(self.ui_config["label_box_height"])
+        self.pass_label.setStyleSheet(
+            f"font-size: {self.ui_config['label_font_size']}px;"
+            "border: 3px solid #00ff88;"
+            "padding-left: 10px;"
+        )
         layout.addWidget(self.pass_label)
 
         self.pass_value = QLabel("")
+        self.pass_value.setFixedHeight(self.ui_config["value_box_height"])
         self.pass_value.setStyleSheet("""
             background:#001100;
             padding:12px;
-            font-size: 28px;
-        """)
+            border: 3px solid #00ff88;
+        """ + f"font-size: {self.ui_config['value_font_size']}px;")
+        self.pass_value.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.pass_value)
 
         self.login_button = QPushButton("В О Й Т И")
-        self.login_button.setStyleSheet("""
-            font-size: 28px;
-            padding: 14px;
-        """)
+        self.login_button.setFixedHeight(self.ui_config["button_box_height"])
+        self.login_button.setStyleSheet(
+            f"font-size: {self.ui_config['button_font_size']}px;"
+            "padding: 14px;"
+            "letter-spacing: 8px;"
+        )
         layout.addWidget(self.login_button)
+
+        self.print_ui_config()
 
         self.username_text = "Хуесос_Ебаный45"
         self.password_text = "*" * 15
@@ -158,6 +223,10 @@ class LoginWidget(QWidget):
         self.typing_timer = QTimer()
         self.typing_timer.timeout.connect(self.type_text)
         self.typing_timer.start(200)
+
+    def print_ui_config(self):
+        print("\n=== LOGIN UI SETTINGS ===")
+        print(json.dumps(self.ui_config, ensure_ascii=False, indent=2))
 
     def type_text(self):
         if self.user_index < len(self.username_text):
