@@ -105,25 +105,25 @@ class LoginWidget(QWidget):
                 border: {LOGIN_WIDGET_BORDER_WIDTH}px solid {LOGIN_WIDGET_BORDER_COLOR};
             }}
 
-            QLabel {
+            QLabel {{
                 color: #00ff88;
-            }
+            }}
 
-            QPushButton {
+            QPushButton {{
                 background-color: #001100;
                 color: #00ff88;
                 border: 3px solid #00ff88;
                 padding: 12px;
-            }
+            }}
 
-            QPushButton:hover {
+            QPushButton:hover {{
                 background-color: #00ff88;
                 color: black;
-            }
+            }}
 
-            QPushButton:pressed {
+            QPushButton:pressed {{
                 background-color: #003300;
-            }
+            }}
         """)
 
         layout = QVBoxLayout()
